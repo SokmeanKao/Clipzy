@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 import type { Video } from "@/lib/types";
-import { unwrapList } from "@/lib/types";
+import { normalizeVideos } from "@/lib/types";
 import { VideoCard, VideoCardSkeleton } from "@/components/video-card";
 import { EmptyState, ErrorState } from "@/components/ui-states";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export default function HomePage() {
     setError(null);
     try {
       const data = await api.videos(0, 24);
-      setVideos(unwrapList(data));
+      setVideos(normalizeVideos(data));
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorTitle"));
     } finally {
@@ -48,7 +48,7 @@ export default function HomePage() {
     setError(null);
     try {
       const data = await api.search(q);
-      setVideos(unwrapList(data));
+      setVideos(normalizeVideos(data));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errorTitle"));
     } finally {

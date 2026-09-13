@@ -76,7 +76,8 @@ export type Channel = {
   subscriberCount?: number;
   subscribed?: boolean;
   isSubscribed?: boolean;
-  videos?: Video[];
+  /** May be a bare array or a Spring Page `{ content: Video[] }`. */
+  videos?: PageResponse<Video> | Video[] | null;
 };
 
 export type WatchHistoryItem = {

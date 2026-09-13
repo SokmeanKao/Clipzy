@@ -8,6 +8,7 @@ import type { Comment, Video, WatchHistoryItem } from "@/lib/types";
 import {
   commentAuthor,
   commentText,
+  normalizeVideos,
   unwrapList,
 } from "@/lib/types";
 import { VideoPlayer } from "@/components/video-player";
@@ -43,7 +44,11 @@ export default function WatchPage() {
         api.videos(0, 12),
       ]);
       setVideo(v);
-      setRelated(unwrapList(feed).filter((item) => item.id !== id).slice(0, 8));
+      setRelated(
+        normalizeVideos(feed)
+          .filter((item) => item.id !== id)
+          .slice(0, 8)
+      );
 
       try {
         setComments(unwrapList(await api.comments(id)));

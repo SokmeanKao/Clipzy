@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import type { Channel, Video } from "@/lib/types";
-import { unwrapList } from "@/lib/types";
+import { normalizeVideos } from "@/lib/types";
 import { useAuth } from "@/components/auth-provider";
 import { VideoCard, VideoCardSkeleton } from "@/components/video-card";
 import { EmptyState, ErrorState } from "@/components/ui-states";
@@ -29,7 +29,8 @@ export default function ChannelPage() {
     try {
       const data = await api.channel(id);
       setChannel(data);
-      setVideos(data.videos ?? []);
+      // Backend returns Spring Page under `videos`, not a bare array
+      setVideos(normalizeVideos(data.videos));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load channel");
     } finally {

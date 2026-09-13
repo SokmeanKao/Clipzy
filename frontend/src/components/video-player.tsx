@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import {
+  ChevronLeft,
+  ChevronRight,
   Maximize2,
   Minimize2,
   Pause,
@@ -14,21 +16,13 @@ import {
 import { api } from "@/lib/api";
 import { useHlsQuality } from "@/hooks/use-hls-quality";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
 const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 const SPEED_SESSION_KEY = "clipzy:playback-speed";
+
+type SettingsPanel = "closed" | "root" | "speed" | "quality";
 
 type VideoPlayerProps = {
   videoId: string;
@@ -73,7 +67,9 @@ export function VideoPlayer({
   const [speed, setSpeed] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [settingsPanel, setSettingsPanel] = useState<SettingsPanel>("closed");
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settingsOpenRef = useRef(false);
 
   const activeLabel =
     levels.find((l) => l.index === activeLevel)?.label ??
@@ -86,10 +82,15 @@ export function VideoPlayer({
         : "Auto"
       : levels.find((l) => l.index === currentLevel)?.label ?? "Quality";
 
+  useEffect(() => {
+    settingsOpenRef.current = settingsPanel !== "closed";
+  }, [settingsPanel]);
+
   const bumpControls = useCallback(() => {
     setShowControls(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
     hideTimer.current = setTimeout(() => {
+      if (settingsOpenRef.current) return;
       if (videoRef.current && !videoRef.current.paused) {
         setShowControls(false);
       }
@@ -143,7 +144,6 @@ export function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
 
-    // Restore session speed preference
     const savedSpeed = sessionStorage.getItem(SPEED_SESSION_KEY);
     if (savedSpeed) {
       const rate = Number(savedSpeed);
@@ -211,7 +211,10 @@ export function VideoPlayer({
   }, [videoId, initialProgress, reportProgress, bumpControls]);
 
   useEffect(() => {
-    const onFs = () => setFullscreen(!!document.fullscreenElement);
+    const onFs = () => {
+      setFullscreen(!!document.fullscreenElement);
+      setSettingsPanel("closed");
+    };
     document.addEventListener("fullscreenchange", onFs);
     return () => document.removeEventListener("fullscreenchange", onFs);
   }, []);
@@ -246,13 +249,25 @@ export function VideoPlayer({
     video.playbackRate = rate;
     setSpeed(rate);
     sessionStorage.setItem(SPEED_SESSION_KEY, String(rate));
+    setSettingsPanel("closed");
+  };
+
+  const changeQuality = (index: number) => {
+    selectLevel(index);
+    setSettingsPanel("closed");
   };
 
   const toggleFullscreen = async () => {
     const el = containerRef.current;
     if (!el) return;
+    setSettingsPanel("closed");
     if (!document.fullscreenElement) await el.requestFullscreen();
     else await document.exitFullscreen();
+  };
+
+  const toggleSettings = () => {
+    setSettingsPanel((prev) => (prev === "closed" ? "root" : "closed"));
+    setShowControls(true);
   };
 
   if (!src) {
@@ -268,6 +283,9 @@ export function VideoPlayer({
     );
   }
 
+  const menuItemClass =
+    "flex w-full cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm text-white hover:bg-white/15";
+
   return (
     <div
       ref={containerRef}
@@ -276,21 +294,129 @@ export function VideoPlayer({
         className
       )}
       onMouseMove={bumpControls}
-      onMouseLeave={() => playing && setShowControls(false)}
+      onMouseLeave={() => {
+        if (settingsPanel !== "closed") return;
+        if (playing) setShowControls(false);
+      }}
     >
       <video
         ref={videoRef}
         className="aspect-video w-full bg-black"
         poster={poster ?? undefined}
         playsInline
-        onClick={togglePlay}
+        onClick={() => {
+          if (settingsPanel !== "closed") {
+            setSettingsPanel("closed");
+            return;
+          }
+          togglePlay();
+        }}
         controls={false}
       />
+
+      {/* Inline settings — must live inside the fullscreen element (no document portal) */}
+      {settingsPanel !== "closed" && (
+        <div
+          className="pointer-events-auto absolute right-3 bottom-16 z-30 w-56 overflow-hidden rounded-lg bg-black/90 text-white shadow-lg ring-1 ring-white/15 backdrop-blur-md"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {settingsPanel === "root" && (
+            <div className="p-1">
+              <button
+                type="button"
+                className={menuItemClass}
+                onClick={() => setSettingsPanel("speed")}
+              >
+                <span>Speed</span>
+                <span className="ml-auto text-xs text-white/60">
+                  {speed === 1 ? "Normal" : `${speed}x`}
+                </span>
+                <ChevronRight className="size-4 opacity-70" />
+              </button>
+              {levels.length > 0 && (
+                <button
+                  type="button"
+                  className={menuItemClass}
+                  onClick={() => setSettingsPanel("quality")}
+                >
+                  <span>Quality</span>
+                  <span className="ml-auto max-w-[6.5rem] truncate text-xs text-white/60">
+                    {qualityTriggerLabel}
+                  </span>
+                  <ChevronRight className="size-4 opacity-70" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {settingsPanel === "speed" && (
+            <div className="p-1">
+              <button
+                type="button"
+                className={menuItemClass}
+                onClick={() => setSettingsPanel("root")}
+              >
+                <ChevronLeft className="size-4" />
+                <span className="font-medium">Speed</span>
+              </button>
+              <div className="my-1 h-px bg-white/10" />
+              {SPEEDS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={menuItemClass}
+                  onClick={() => changeSpeed(s)}
+                >
+                  {s === 1 ? "Normal" : `${s}x`}
+                  {speed === s ? <span className="ml-auto text-xs">✓</span> : null}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {settingsPanel === "quality" && (
+            <div className="p-1">
+              <button
+                type="button"
+                className={menuItemClass}
+                onClick={() => setSettingsPanel("root")}
+              >
+                <ChevronLeft className="size-4" />
+                <span className="font-medium">Quality</span>
+              </button>
+              <div className="my-1 h-px bg-white/10" />
+              <button
+                type="button"
+                className={menuItemClass}
+                onClick={() => changeQuality(-1)}
+              >
+                {activeLabel ? `Auto (${activeLabel})` : "Auto"}
+                {currentLevel === -1 ? (
+                  <span className="ml-auto text-xs">✓</span>
+                ) : null}
+              </button>
+              {levels.map((q) => (
+                <button
+                  key={q.index}
+                  type="button"
+                  className={menuItemClass}
+                  onClick={() => changeQuality(q.index)}
+                >
+                  {q.label}
+                  {currentLevel === q.index ? (
+                    <span className="ml-auto text-xs">✓</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div
         className={cn(
           "pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pb-3 pt-16 transition-opacity duration-300",
-          showControls ? "opacity-100" : "opacity-0"
+          showControls || settingsPanel !== "closed" ? "opacity-100" : "opacity-0"
         )}
       >
         <div className="pointer-events-auto space-y-2">
@@ -356,75 +482,20 @@ export function VideoPlayer({
             </div>
 
             <div className="ml-auto flex items-center gap-1">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    className="text-white hover:bg-white/15 hover:text-white"
-                    aria-label="Settings"
-                  >
-                    <Settings />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-44">
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                      Speed
-                      <span className="ml-auto mr-1 text-xs text-muted-foreground">
-                        {speed === 1 ? "Normal" : `${speed}x`}
-                      </span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      {SPEEDS.map((s) => (
-                        <DropdownMenuItem
-                          key={s}
-                          onClick={() => changeSpeed(s)}
-                        >
-                          {s === 1 ? "Normal" : `${s}x`}
-                          {speed === s ? (
-                            <span className="ml-auto text-xs">✓</span>
-                          ) : null}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-
-                  {levels.length > 0 && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          Quality
-                          <span className="ml-auto mr-1 max-w-[7rem] truncate text-xs text-muted-foreground">
-                            {qualityTriggerLabel}
-                          </span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent>
-                          <DropdownMenuItem onClick={() => selectLevel(-1)}>
-                            {activeLabel ? `Auto (${activeLabel})` : "Auto"}
-                            {currentLevel === -1 ? (
-                              <span className="ml-auto text-xs">✓</span>
-                            ) : null}
-                          </DropdownMenuItem>
-                          {levels.map((q) => (
-                            <DropdownMenuItem
-                              key={q.index}
-                              onClick={() => selectLevel(q.index)}
-                            >
-                              {q.label}
-                              {currentLevel === q.index ? (
-                                <span className="ml-auto text-xs">✓</span>
-                              ) : null}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                className={cn(
+                  "text-white hover:bg-white/15 hover:text-white",
+                  settingsPanel !== "closed" && "bg-white/15"
+                )}
+                onClick={toggleSettings}
+                aria-label="Settings"
+                aria-expanded={settingsPanel !== "closed"}
+              >
+                <Settings />
+              </Button>
 
               <Button
                 type="button"
