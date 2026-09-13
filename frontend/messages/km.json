@@ -1,0 +1,65 @@
+{
+  "nav": {
+    "upload": "ផ្ទុកឡើង",
+    "login": "ចូល",
+    "register": "ចុះឈ្មោះ",
+    "myChannel": "ឆានែលរបស់ខ្ញុំ",
+    "signOut": "ចាកចេញ"
+  },
+  "theme": {
+    "label": "រូបរាង",
+    "light": "ភ្លឺ",
+    "dark": "ងងឹត",
+    "system": "ប្រព័ន្ធ"
+  },
+  "language": {
+    "label": "ភាសា",
+    "en": "English",
+    "km": "ខ្មែរ",
+    "ko": "한국어"
+  },
+  "home": {
+    "brand": "Clipzy",
+    "tagline": "ផ្ទុកឡើង បម្លែង និងចាក់វីដេអូ — ដោយគ្មានភាពស្មុគស្មាញ។",
+    "searchPlaceholder": "ស្វែងរកវីដេអូ…",
+    "search": "ស្វែងរក",
+    "emptyTitle": "មិនទាន់មានវីដេអូ",
+    "emptyDescription": "ក្លាយជាអ្នកដំបូងដែលផ្ទុកឡើង។",
+    "errorTitle": "មិនអាចផ្ទុកមាតិកា",
+    "errorRetry": "ព្យាយាមម្តងទៀត"
+  },
+  "auth": {
+    "loginTitle": "សូមស្វាគមន៍មកវិញ",
+    "loginSubtitle": "ចូលដើម្បីផ្ទុកឡើង និងបញ្ចេញមតិ។",
+    "registerTitle": "បង្កើតគណនី",
+    "registerSubtitle": "ចូលរួម Clipzy ក្នុងរយៈពេលប៉ុន្មាននាទី។",
+    "email": "អ៊ីមែល",
+    "password": "ពាក្យសម្ងាត់",
+    "displayName": "ឈ្មោះបង្ហាញ",
+    "login": "ចូល",
+    "register": "បង្កើតគណនី",
+    "noAccount": "មិនទាន់មានគណនី?",
+    "hasAccount": "មានគណនីរួចហើយ?"
+  },
+  "upload": {
+    "title": "ផ្ទុកវីដេអូឡើង",
+    "subtitle": "ជ្រើសឯកសារ យើងនឹងបម្លែងទៅ HLS។",
+    "titleLabel": "ចំណងជើង",
+    "descriptionLabel": "ការពិពណ៌នា",
+    "visibilityLabel": "ភាពមើលឃើញ",
+    "fileLabel": "ឯកសារវីដេអូ",
+    "submit": "ផ្ទុកឡើង",
+    "uploading": "កំពុងផ្ទុកឡើង…",
+    "processing": "កំពុងដំណើរការ…",
+    "ready": "រួចរាល់ — មើលឥឡូវ",
+    "failed": "បម្លែងបរាជ័យ",
+    "loginRequired": "ចូលដើម្បីផ្ទុកវីដេអូឡើង។"
+  },
+  "common": {
+    "loading": "កំពុងផ្ទុក…",
+    "retry": "ព្យាយាមម្តងទៀត",
+    "public": "សាធារណៈ",
+    "unlisted": "មិនរាយ",
+    "private": "ឯកជន"
+  }
+}

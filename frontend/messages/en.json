@@ -1,0 +1,65 @@
+{
+  "nav": {
+    "upload": "Upload",
+    "login": "Log in",
+    "register": "Sign up",
+    "myChannel": "My channel",
+    "signOut": "Sign out"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "km": "ខ្មែរ",
+    "ko": "한국어"
+  },
+  "home": {
+    "brand": "Clipzy",
+    "tagline": "Upload, transcode, and stream — without the friction.",
+    "searchPlaceholder": "Search videos…",
+    "search": "Search",
+    "emptyTitle": "No videos yet",
+    "emptyDescription": "Be the first to upload a clip.",
+    "errorTitle": "Couldn’t load feed",
+    "errorRetry": "Try again"
+  },
+  "auth": {
+    "loginTitle": "Welcome back",
+    "loginSubtitle": "Sign in to upload and comment.",
+    "registerTitle": "Create your account",
+    "registerSubtitle": "Join Clipzy in a minute.",
+    "email": "Email",
+    "password": "Password",
+    "displayName": "Display name",
+    "login": "Log in",
+    "register": "Create account",
+    "noAccount": "No account?",
+    "hasAccount": "Already have an account?"
+  },
+  "upload": {
+    "title": "Upload a video",
+    "subtitle": "Pick a file, we’ll transcode it to HLS.",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "visibilityLabel": "Visibility",
+    "fileLabel": "Video file",
+    "submit": "Upload",
+    "uploading": "Uploading…",
+    "processing": "Processing…",
+    "ready": "Ready — watch now",
+    "failed": "Transcode failed",
+    "loginRequired": "Log in to upload videos."
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Try again",
+    "public": "Public",
+    "unlisted": "Unlisted",
+    "private": "Private"
+  }
+}

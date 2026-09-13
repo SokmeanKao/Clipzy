@@ -1,0 +1,65 @@
+{
+  "nav": {
+    "upload": "업로드",
+    "login": "로그인",
+    "register": "가입",
+    "myChannel": "내 채널",
+    "signOut": "로그아웃"
+  },
+  "theme": {
+    "label": "테마",
+    "light": "라이트",
+    "dark": "다크",
+    "system": "시스템"
+  },
+  "language": {
+    "label": "언어",
+    "en": "English",
+    "km": "ខ្មែរ",
+    "ko": "한국어"
+  },
+  "home": {
+    "brand": "Clipzy",
+    "tagline": "업로드, 트랜스코딩, 스트리밍을 더 간편하게.",
+    "searchPlaceholder": "동영상 검색…",
+    "search": "검색",
+    "emptyTitle": "아직 동영상이 없습니다",
+    "emptyDescription": "첫 클립을 올려 보세요.",
+    "errorTitle": "피드를 불러오지 못했습니다",
+    "errorRetry": "다시 시도"
+  },
+  "auth": {
+    "loginTitle": "다시 오신 것을 환영합니다",
+    "loginSubtitle": "로그인하여 업로드하고 댓글을 남기세요.",
+    "registerTitle": "계정 만들기",
+    "registerSubtitle": "잠시면 Clipzy에 가입할 수 있습니다.",
+    "email": "이메일",
+    "password": "비밀번호",
+    "displayName": "표시 이름",
+    "login": "로그인",
+    "register": "계정 만들기",
+    "noAccount": "계정이 없나요?",
+    "hasAccount": "이미 계정이 있나요?"
+  },
+  "upload": {
+    "title": "동영상 업로드",
+    "subtitle": "파일을 선택하면 HLS로 변환합니다.",
+    "titleLabel": "제목",
+    "descriptionLabel": "설명",
+    "visibilityLabel": "공개 범위",
+    "fileLabel": "동영상 파일",
+    "submit": "업로드",
+    "uploading": "업로드 중…",
+    "processing": "처리 중…",
+    "ready": "준비됨 — 지금 보기",
+    "failed": "변환 실패",
+    "loginRequired": "업로드하려면 로그인하세요."
+  },
+  "common": {
+    "loading": "로딩 중…",
+    "retry": "다시 시도",
+    "public": "공개",
+    "unlisted": "일부 공개",
+    "private": "비공개"
+  }
+}
