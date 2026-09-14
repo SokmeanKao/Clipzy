@@ -29,8 +29,8 @@ jobs:
           - image: clipzy-frontend
             context: ./frontend
             dockerfile: ./frontend/Dockerfile
-            # Baked for local compose users (browser → host :8081)
-            build_args: "NEXT_PUBLIC_API_URL=http://localhost:8081"
+            # Baked for nginx gateway (browser → https://localhost/api)
+            build_args: "NEXT_PUBLIC_API_URL=https://localhost/api"
     steps:
       - name: Checkout
         uses: actions/checkout@v4

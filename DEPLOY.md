@@ -1,22 +1,27 @@
 # Clipzy deployment
 
-## Run on any PC (pull Compose + GHCR images)
+## Run on any PC (pull images + nginx on 443)
 
 ```bash
-mkdir clipzy && cd clipzy
-curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/SokmeanKao/Clipzy/main/docker-compose.pull.yml
-docker compose pull
-docker compose up -d
+git clone --depth 1 https://github.com/SokmeanKao/Clipzy.git
+cd Clipzy
+docker compose -f docker-compose.pull.yml pull
+docker compose -f docker-compose.pull.yml up -d
 ```
 
-| Image | Role |
+| Piece | Role |
 |-------|------|
-| `ghcr.io/sokmeankao/clipzy-backend` | API + FFmpeg worker |
-| `ghcr.io/sokmeankao/clipzy-frontend` | Next.js UI |
-| `postgres:16` | Database (official) |
-| `quay.io/minio/minio` | Object storage (official) |
+| `nginx:1.27-alpine` | TLS gateway — **only host port 443** |
+| `ghcr.io/sokmeankao/clipzy-backend` | API + FFmpeg worker (internal) |
+| `ghcr.io/sokmeankao/clipzy-frontend` | Next.js UI (internal) |
+| `postgres:16` | Database (internal) |
+| `quay.io/minio/minio` | Object storage (internal) |
 
-CI pushes Clipzy images on every push to `main` and on tags (`v*`). See `.github/workflows/docker-images.yml`.
+Routes: `/` → frontend, `/api/` → backend, `/videos/` → MinIO.  
+App: https://localhost/en (self-signed warning is expected).  
+Replace certs: write PEMs into the `nginx_certs` volume.
+
+CI pushes Clipzy images on every push to `main` and on tags (`v*`). Frontend bake: `NEXT_PUBLIC_API_URL=https://localhost/api`. See `.github/workflows/docker-images.yml`.
 
 ### Make GHCR packages public (one-time)
 
@@ -25,7 +30,7 @@ CI pushes Clipzy images on every push to `main` and on tags (`v*`). See `.github
 
 Until then: `docker login ghcr.io`.
 
-Pin a release: `CLIPZY_TAG=v1.0.0 docker compose up -d`
+Pin a release: `CLIPZY_TAG=v1.0.0 docker compose -f docker-compose.pull.yml up -d`
 
 ## Alternative: git clone → build from source
 
@@ -35,7 +40,7 @@ cd Clipzy
 docker compose up --build -d
 ```
 
-Root `docker-compose.yml` builds local images. Same stack: `infra/docker-compose.prod.yml`.
+Root `docker-compose.yml` builds local images (no nginx). Same stack alternate: `infra/docker-compose.prod.yml`.
 
 | Service | Host URL |
 |---------|----------|

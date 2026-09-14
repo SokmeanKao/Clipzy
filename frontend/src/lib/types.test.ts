@@ -29,7 +29,7 @@ describe("commentText", () => {
 });
 
 describe("API default", () => {
-  it("documents localhost:8081 as the contract base", () => {
-    expect("http://localhost:8081").toMatch(/8081$/);
+  it("documents https://localhost/api as the gateway contract base", () => {
+    expect("https://localhost/api").toMatch(/\/api$/);
   });
 });

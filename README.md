@@ -4,24 +4,25 @@ Upload, transcode to HLS, and stream video with social features — comments, su
 
 **Repository:** [github.com/SokmeanKao/Clipzy](https://github.com/SokmeanKao/Clipzy)
 
-## Run with Docker (pull compose + images)
+## Run with Docker (HTTPS gateway on 443)
 
-No git clone needed — download Compose and pull published images:
+Shallow clone (needs `infra/nginx` configs), pull app images, expose **only port 443**:
 
 ```bash
-mkdir clipzy && cd clipzy
-curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/SokmeanKao/Clipzy/main/docker-compose.pull.yml
-docker compose pull
-docker compose up -d
+git clone --depth 1 https://github.com/SokmeanKao/Clipzy.git
+cd Clipzy
+docker compose -f docker-compose.pull.yml pull
+docker compose -f docker-compose.pull.yml up -d
 ```
 
 | Service | URL |
 |---------|-----|
-| App | http://localhost:3000/en |
-| API health | http://localhost:8081/actuator/health |
-| MinIO console | http://localhost:9001 (`minioadmin` / `minioadmin`) |
+| App | https://localhost/en (accept self-signed cert warning) |
+| API health | https://localhost/api/actuator/health |
 
-Stop: `docker compose down`
+Stop: `docker compose -f docker-compose.pull.yml down`
+
+Replace TLS later: put `fullchain.pem` + `privkey.pem` into the `nginx_certs` Docker volume.
 
 If image pull says `unauthorized`, make GHCR packages **Public** (GitHub → Packages → `clipzy-backend` / `clipzy-frontend` → Package settings), or:
 
@@ -36,6 +37,8 @@ git clone https://github.com/SokmeanKao/Clipzy.git
 cd Clipzy
 docker compose up --build -d
 ```
+
+Builds backend/frontend locally (no nginx gateway; ports 3000/8081).
 
 ## Features
 
