@@ -49,6 +49,8 @@ clipzy:
     region: ${S3_REGION:us-east-1}
     # Public playback base: {endpoint}/{bucket} — manifests served as path-style URLs
     public-base-url: ${S3_PUBLIC_BASE_URL:http://localhost:9000/videos}
+    # Browser-facing S3 origin for presigned PUTs (blank → derive from public-base-url)
+    public-endpoint: ${S3_PUBLIC_ENDPOINT:}
     # Presigned PUT lifetime for raw uploads
     presign-put-minutes: 60
   ffmpeg:

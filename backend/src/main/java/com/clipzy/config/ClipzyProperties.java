@@ -68,6 +68,11 @@ public class ClipzyProperties {
     private String region = "us-east-1";
     /** Public base URL for playback (MinIO path-style). */
     private String publicBaseUrl = "http://localhost:9000/videos";
+    /**
+     * Browser-facing S3 API origin (scheme+host[+port]), no bucket path.
+     * When blank, derived from {@link #publicBaseUrl} by stripping {@code /}{@link #bucket}.
+     */
+    private String publicEndpoint = "";
     private long presignPutMinutes = 60;
 
     public String getEndpoint() {
@@ -116,6 +121,30 @@ public class ClipzyProperties {
 
     public void setPublicBaseUrl(String publicBaseUrl) {
       this.publicBaseUrl = publicBaseUrl;
+    }
+
+    public String getPublicEndpoint() {
+      return publicEndpoint;
+    }
+
+    public void setPublicEndpoint(String publicEndpoint) {
+      this.publicEndpoint = publicEndpoint;
+    }
+
+    /** Origin used when signing browser-facing URLs. */
+    public String resolvedPublicEndpoint() {
+      if (publicEndpoint != null && !publicEndpoint.isBlank()) {
+        return publicEndpoint.replaceAll("/$", "");
+      }
+      if (publicBaseUrl != null && !publicBaseUrl.isBlank()) {
+        String base = publicBaseUrl.replaceAll("/$", "");
+        String suffix = "/" + bucket;
+        if (base.endsWith(suffix)) {
+          return base.substring(0, base.length() - suffix.length());
+        }
+        return base;
+      }
+      return endpoint.replaceAll("/$", "");
     }
 
     public long getPresignPutMinutes() {

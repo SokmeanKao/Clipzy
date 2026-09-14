@@ -31,7 +31,7 @@ public class S3Config {
   S3Presigner s3Presigner(ClipzyProperties properties) {
     ClipzyProperties.S3 s3 = properties.getS3();
     return S3Presigner.builder()
-        .endpointOverride(URI.create(s3.getEndpoint()))
+        .endpointOverride(URI.create(s3.resolvedPublicEndpoint()))
         .region(Region.of(s3.getRegion()))
         .credentialsProvider(StaticCredentialsProvider.create(
             AwsBasicCredentials.create(s3.getAccessKey(), s3.getSecretKey())))
