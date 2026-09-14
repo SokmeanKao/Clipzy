@@ -1,37 +1,27 @@
 # Clipzy deployment
 
-## Run on any PC (published images)
-
-From a clone of this repo:
+## Run on any PC (git clone → build from source)
 
 ```bash
-docker compose up -d
+git clone https://github.com/SokmeanKao/Clipzy.git
+cd Clipzy
+docker compose up --build -d
 ```
 
-This pulls:
+Root `docker-compose.yml` builds `backend/` and `frontend/` into local images (`clipzy-backend:local`, `clipzy-frontend:local`) and runs Postgres + MinIO.
 
 | Image | Role |
 |-------|------|
-| `ghcr.io/sokmeankao/clipzy-backend` | API + FFmpeg worker (**our** image) |
-| `ghcr.io/sokmeankao/clipzy-frontend` | Next.js UI (**our** image) |
+| `clipzy-backend:local` (built) | API + FFmpeg worker |
+| `clipzy-frontend:local` (built) | Next.js UI |
 | `postgres:16` | Database (official) |
 | `quay.io/minio/minio` | Object storage (official) |
 
-CI builds and pushes the two Clipzy images on every push to `main` and on version tags (`v*`). See `.github/workflows/docker-images.yml`.
+Equivalent alternate file: `docker compose -f infra/docker-compose.prod.yml up --build -d`
 
-### Make GHCR packages public (one-time)
+## Optional: published GHCR images
 
-1. Open https://github.com/SokmeanKao/Clipzy/pkgs/container/clipzy-backend
-2. Package settings → Change visibility → **Public**
-3. Repeat for `clipzy-frontend`
-
-Until then, consumers need `docker login ghcr.io`.
-
-## Build from source (local prod compose)
-
-```bash
-docker compose -f infra/docker-compose.prod.yml up --build
-```
+CI still pushes `ghcr.io/sokmeankao/clipzy-backend` and `clipzy-frontend` on `main` / tags (`v*`). To run those without building, see `.github/workflows/docker-images.yml` and set package visibility to **Public**, or `docker login ghcr.io`.
 
 | Service | Host URL |
 |---------|----------|

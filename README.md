@@ -4,14 +4,14 @@ Upload, transcode to HLS, and stream video with social features — comments, su
 
 **Repository:** [github.com/SokmeanKao/Clipzy](https://github.com/SokmeanKao/Clipzy)
 
-## Run with Docker (recommended for others)
+## Run with Docker (git clone → build)
 
-Pulls **only our app images** (backend + UI) from GitHub Container Registry. Postgres and MinIO use official images.
+Clone the repo and build backend + frontend from source. Postgres and MinIO use official images.
 
 ```bash
 git clone https://github.com/SokmeanKao/Clipzy.git
 cd Clipzy
-docker compose up -d
+docker compose up --build -d
 ```
 
 | Service | URL |
@@ -22,20 +22,7 @@ docker compose up -d
 
 Stop: `docker compose down`
 
-Published images:
-
-- `ghcr.io/sokmeankao/clipzy-backend:latest`
-- `ghcr.io/sokmeankao/clipzy-frontend:latest`
-
-If pulls fail with `unauthorized`, either make the packages **Public** on GitHub (Packages → package → Package settings → Change visibility), or:
-
-```bash
-echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
-```
-
-Pin a release: `CLIPZY_TAG=v1.0.0 docker compose up -d`
-
-Build from source instead of pulling: `docker compose -f infra/docker-compose.prod.yml up --build`
+Optional: pull pre-built GHCR images instead (`ghcr.io/sokmeankao/clipzy-backend` / `clipzy-frontend`) — see [DEPLOY.md](./DEPLOY.md).
 
 ## Features
 

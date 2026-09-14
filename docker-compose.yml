@@ -1,22 +1,15 @@
-# Clipzy — run the full stack with published UI + backend images
+# Clipzy — full stack from a git clone (builds backend + frontend from source)
 #
 # Prerequisites: Docker Desktop (or Docker Engine + Compose v2)
 #
-#   docker compose up -d
+#   git clone https://github.com/SokmeanKao/Clipzy.git
+#   cd Clipzy
+#   docker compose up --build -d
 #
-# App:     http://localhost:3000
+# App:     http://localhost:3000/en
 # API:     http://localhost:8081/actuator/health
 # MinIO:   http://localhost:9001  (minioadmin / minioadmin)
 #
-# Images (built by GitHub Actions → GHCR):
-#   ghcr.io/sokmeankao/clipzy-backend:latest
-#   ghcr.io/sokmeankao/clipzy-frontend:latest
-#
-# If packages are private:  echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
-#
-# Override tag:  CLIPZY_TAG=v1.0.0 docker compose up -d
-# Build from source instead:  docker compose -f infra/docker-compose.prod.yml up --build
-
 name: clipzy
 
 services:
@@ -70,7 +63,10 @@ services:
       "
 
   backend:
-    image: ghcr.io/sokmeankao/clipzy-backend:${CLIPZY_TAG:-latest}
+    image: clipzy-backend:local
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       postgres:
@@ -95,12 +91,19 @@ services:
       SERVER_PORT: "8081"
 
   frontend:
-    image: ghcr.io/sokmeankao/clipzy-frontend:${CLIPZY_TAG:-latest}
+    image: clipzy-frontend:local
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8081
     restart: unless-stopped
     depends_on:
       - backend
     ports:
       - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8081
 
 volumes:
   clipzy_postgres_data:
