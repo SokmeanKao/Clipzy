@@ -58,7 +58,11 @@ clipzy:
     path: ${FFMPEG_PATH:ffmpeg}
   transcode:
     poll-ms: 5000
-    batch-size: 1
+    # Claim up to this many PENDING jobs per tick (also capped by free worker slots)
+    batch-size: 10
+    # 0 = auto max(1, cores/2); each ffmpeg job already uses -threads 0
+    worker-pool-size: ${TRANSCODE_WORKER_POOL_SIZE:0}
+    upload-concurrency: ${TRANSCODE_UPLOAD_CONCURRENCY:8}
 
 logging:
   level:

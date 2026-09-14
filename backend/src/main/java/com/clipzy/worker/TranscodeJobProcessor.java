@@ -15,10 +15,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -55,37 +60,50 @@ public class TranscodeJobProcessor {
     this.transactionTemplate = transactionTemplate;
   }
 
-  public void process(UUID jobId) {
+  /**
+   * Process a job already claimed ({@code RUNNING}) by {@link TranscodeWorker}.
+   */
+  public void processClaimed(UUID jobId) {
     UUID videoId = transactionTemplate.execute(status -> {
       TranscodeJob job = jobRepository.findById(jobId).orElse(null);
-      if (job == null || job.getStatus() != JobStatus.PENDING) {
+      if (job == null || job.getStatus() != JobStatus.RUNNING) {
         return null;
       }
-      job.setStatus(JobStatus.RUNNING);
-      job.setUpdatedAt(Instant.now());
-      jobRepository.save(job);
       return job.getVideo().getId();
     });
     if (videoId == null) {
       return;
     }
 
+    Instant jobStart = Instant.now();
     Path workDir = null;
     try {
       workDir = Files.createTempDirectory(Path.of(System.getProperty("java.io.tmpdir")), "clipzy-");
       Path input = workDir.resolve("raw");
+
+      Instant downloadStart = Instant.now();
       storageService.download("videos/" + videoId + "/raw", input);
+      long downloadMs = Duration.between(downloadStart, Instant.now()).toMillis();
 
       Path hlsDir = workDir.resolve("hls");
       Files.createDirectories(hlsDir);
+
+      Instant encodeStart = Instant.now();
       runFfmpeg(input, hlsDir);
+      long encodeMs = Duration.between(encodeStart, Instant.now()).toMillis();
 
       String prefix = "videos/" + videoId + "/hls/";
-      uploadTree(hlsDir, prefix);
-      String masterPath = prefix + "master.m3u8";
+      Instant uploadStart = Instant.now();
+      uploadTreeConcurrently(hlsDir, prefix);
+      long uploadMs = Duration.between(uploadStart, Instant.now()).toMillis();
 
+      String masterPath = prefix + "master.m3u8";
       transactionTemplate.executeWithoutResult(status -> markSucceeded(jobId, videoId, masterPath, prefix));
-      log.info("Transcode succeeded for video {}", videoId);
+
+      long totalMs = Duration.between(jobStart, Instant.now()).toMillis();
+      log.info(
+          "Transcode succeeded for video {} — download={}ms encode={}ms upload={}ms total={}ms",
+          videoId, downloadMs, encodeMs, uploadMs, totalMs);
     } catch (Exception e) {
       log.error("Transcode failed for video {}: {}", videoId, e.getMessage(), e);
       String message = truncate(e.getMessage(), 4000);
@@ -107,9 +125,9 @@ public class TranscodeJobProcessor {
     }
     videoRepository.save(video);
 
-    saveRendition(video, 1080, 5000, prefix + "stream_0/playlist.m3u8");
-    saveRendition(video, 720, 2800, prefix + "stream_1/playlist.m3u8");
-    saveRendition(video, 480, 1400, prefix + "stream_2/playlist.m3u8");
+    saveRendition(video, 1080, 5150, prefix + "stream_0/playlist.m3u8");
+    saveRendition(video, 720, 2880, prefix + "stream_1/playlist.m3u8");
+    saveRendition(video, 480, 1440, prefix + "stream_2/playlist.m3u8");
 
     TranscodeJob job = jobRepository.findById(jobId).orElseThrow();
     job.setStatus(JobStatus.SUCCEEDED);
@@ -132,24 +150,31 @@ public class TranscodeJobProcessor {
     });
   }
 
-  private void runFfmpeg(Path input, Path hlsDir) throws IOException, InterruptedException {
-    String ffmpeg = properties.getFfmpeg().getPath();
-    List<String> command = List.of(
-        ffmpeg, "-y", "-i", input.toAbsolutePath().toString(),
+  static List<String> buildFfmpegCommand(String ffmpegPath, Path input, Path hlsDir) {
+    return List.of(
+        ffmpegPath, "-y", "-i", input.toAbsolutePath().toString(),
         "-filter_complex",
         "[0:v]split=3[v1][v2][v3]; [v1]scale=w=1920:h=1080[v1out]; [v2]scale=w=1280:h=720[v2out]; [v3]scale=w=854:h=480[v3out]",
-        "-map", "[v1out]", "-c:v:0", "libx264", "-b:v:0", "5000k", "-map", "a:0?", "-c:a:0", "aac", "-b:a:0", "192k",
-        "-map", "[v2out]", "-c:v:1", "libx264", "-b:v:1", "2800k", "-map", "a:0?", "-c:a:1", "aac", "-b:a:1", "128k",
-        "-map", "[v3out]", "-c:v:2", "libx264", "-b:v:2", "1400k", "-map", "a:0?", "-c:a:2", "aac", "-b:a:2", "96k",
+        "-map", "[v1out]", "-c:v:0", "libx264", "-preset", "veryfast", "-b:v:0", "5150k", "-threads", "0",
+        "-map", "a:0?", "-c:a:0", "aac", "-b:a:0", "192k",
+        "-map", "[v2out]", "-c:v:1", "libx264", "-preset", "veryfast", "-b:v:1", "2880k", "-threads", "0",
+        "-map", "a:0?", "-c:a:1", "aac", "-b:a:1", "128k",
+        "-map", "[v3out]", "-c:v:2", "libx264", "-preset", "veryfast", "-b:v:2", "1440k", "-threads", "0",
+        "-map", "a:0?", "-c:a:2", "aac", "-b:a:2", "96k",
         "-var_stream_map", "v:0,a:0 v:1,a:1 v:2,a:2",
         "-master_pl_name", "master.m3u8",
         "-f", "hls",
-        "-hls_time", "4",
+        "-hls_time", "6",
         "-hls_playlist_type", "vod",
         "-hls_segment_filename", "stream_%v/data%03d.ts",
         "-hls_flags", "independent_segments",
         "stream_%v/playlist.m3u8"
     );
+  }
+
+  private void runFfmpeg(Path input, Path hlsDir) throws IOException, InterruptedException {
+    String ffmpeg = properties.getFfmpeg().getPath();
+    List<String> command = buildFfmpegCommand(ffmpeg, input, hlsDir);
 
     ProcessBuilder pb = new ProcessBuilder(command);
     pb.directory(hlsDir.toFile());
@@ -173,12 +198,34 @@ public class TranscodeJobProcessor {
     }
   }
 
-  private void uploadTree(Path root, String keyPrefix) throws IOException {
+  private void uploadTreeConcurrently(Path root, String keyPrefix) throws IOException {
+    List<Path> files;
     try (Stream<Path> walk = Files.walk(root)) {
-      walk.filter(Files::isRegularFile).forEach(file -> {
+      files = walk.filter(Files::isRegularFile).toList();
+    }
+    int concurrency = Math.max(1, properties.getTranscode().getUploadConcurrency());
+    ExecutorService uploadPool = Executors.newFixedThreadPool(concurrency);
+    try {
+      List<CompletableFuture<Void>> uploads = new ArrayList<>(files.size());
+      for (Path file : files) {
         String relative = root.relativize(file).toString().replace('\\', '/');
-        storageService.uploadFile(keyPrefix + relative, file, contentTypeFor(relative));
-      });
+        String key = keyPrefix + relative;
+        String contentType = contentTypeFor(relative);
+        uploads.add(CompletableFuture.runAsync(
+            () -> storageService.uploadFileWithRetry(key, file, contentType),
+            uploadPool));
+      }
+      CompletableFuture.allOf(uploads.toArray(CompletableFuture[]::new)).join();
+    } finally {
+      uploadPool.shutdown();
+      try {
+        if (!uploadPool.awaitTermination(30, TimeUnit.SECONDS)) {
+          uploadPool.shutdownNow();
+        }
+      } catch (InterruptedException e) {
+        uploadPool.shutdownNow();
+        Thread.currentThread().interrupt();
+      }
     }
   }
 

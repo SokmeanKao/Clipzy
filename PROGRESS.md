@@ -9,7 +9,8 @@ Track phase completion across agent sessions. Update after each phase; do not ad
 | 2 | Data model & migrations | **done** | Flyway V2–V4; JPA entities + User IT |
 | 3 | Auth (JWT) | **done** | register/login/refresh/me; jjwt 0.12.x |
 | 4 | Upload & storage | **done** | MinIO/S3 presigned PUT; complete-upload → jobs |
-| 5 | Transcoding worker | **done** | Scheduled FFmpeg HLS; `clipzy.ffmpeg.path` |
+| 5 | Transcoding worker | **done** | Scheduled FFmpeg HLS; Phase **5b** concurrency + veryfast |
+| 5b | Faster concurrent transcode | **done** | SKIP LOCKED claim; pool; concurrent uploads; veryfast |
 | 6 | Catalog & playback APIs | **done** | feed, search, views; public GET comments |
 | 7 | Social features | **done** | comments, subscribe, watch history |
 | 8 | Frontend scaffold | **done** | Next.js 16 App Router, Tailwind, shadcn |
@@ -22,4 +23,5 @@ Track phase completion across agent sessions. Update after each phase; do not ad
 
 ## Session log
 
+- **2026-09-14** — Phase **5b**: `veryfast` encode, `SKIP LOCKED` job claim, bounded worker pool (`cores/2`), concurrent HLS uploads + timing logs. Progressive publish (fast first watch) deferred.
 - **2026-09-14** — Phases 13–14: YouTube-style quality/speed settings; dark/light/system theme; locales en/km/ko with Noto fallbacks.

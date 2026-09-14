@@ -173,7 +173,15 @@ public class ClipzyProperties {
 
   public static class Transcode {
     private long pollMs = 5000;
-    private int batchSize = 1;
+    /** Max jobs to claim per poll tick (capped further by free pool slots). */
+    private int batchSize = 10;
+    /**
+     * Concurrent ffmpeg jobs. {@code 0} = auto ({@code max(1, cores/2)}).
+     * Each job already uses multiple cores via ffmpeg {@code -threads 0}.
+     */
+    private int workerPoolSize = 0;
+    /** Parallel S3 uploads of HLS segments within a single job. */
+    private int uploadConcurrency = 8;
 
     public long getPollMs() {
       return pollMs;
@@ -190,5 +198,22 @@ public class ClipzyProperties {
     public void setBatchSize(int batchSize) {
       this.batchSize = batchSize;
     }
+
+    public int getWorkerPoolSize() {
+      return workerPoolSize;
+    }
+
+    public void setWorkerPoolSize(int workerPoolSize) {
+      this.workerPoolSize = workerPoolSize;
+    }
+
+    public int getUploadConcurrency() {
+      return uploadConcurrency;
+    }
+
+    public void setUploadConcurrency(int uploadConcurrency) {
+      this.uploadConcurrency = uploadConcurrency;
+    }
   }
 }
+
