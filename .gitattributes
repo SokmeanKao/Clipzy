@@ -1,0 +1,2 @@
+*.sh text eol=lf
+infra/nginx/docker-entrypoint.d/* text eol=lf
