@@ -4,15 +4,13 @@ Upload, transcode to HLS, and stream video with social features — comments, su
 
 **Repository:** [github.com/SokmeanKao/Clipzy](https://github.com/SokmeanKao/Clipzy)
 
-## Run with Docker (HTTPS gateway on 443)
-
-Shallow clone (needs `infra/nginx` configs), pull app images, expose **only port 443**:
+## Run with Docker (no clone — curl Compose + pull images)
 
 ```bash
-git clone --depth 1 https://github.com/SokmeanKao/Clipzy.git
-cd Clipzy
-docker compose -f docker-compose.pull.yml pull
-docker compose -f docker-compose.pull.yml up -d
+mkdir clipzy && cd clipzy
+curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/SokmeanKao/Clipzy/main/docker-compose.pull.yml
+docker compose pull
+docker compose up -d
 ```
 
 | Service | URL |
@@ -20,11 +18,13 @@ docker compose -f docker-compose.pull.yml up -d
 | App | https://localhost/en (accept self-signed cert warning) |
 | API health | https://localhost/api/actuator/health |
 
-Stop: `docker compose -f docker-compose.pull.yml down`
+Only host port **443**. Images: `clipzy-backend`, `clipzy-frontend`, `clipzy-gateway` (nginx).
+
+Stop: `docker compose down`
 
 Replace TLS later: put `fullchain.pem` + `privkey.pem` into the `nginx_certs` Docker volume.
 
-If image pull says `unauthorized`, make GHCR packages **Public** (GitHub → Packages → `clipzy-backend` / `clipzy-frontend` → Package settings), or:
+If image pull says `unauthorized`, make GHCR packages **Public** (including `clipzy-gateway`), or:
 
 ```bash
 echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin

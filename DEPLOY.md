@@ -1,17 +1,17 @@
 # Clipzy deployment
 
-## Run on any PC (pull images + nginx on 443)
+## Run on any PC (no clone — curl Compose + pull images)
 
 ```bash
-git clone --depth 1 https://github.com/SokmeanKao/Clipzy.git
-cd Clipzy
-docker compose -f docker-compose.pull.yml pull
-docker compose -f docker-compose.pull.yml up -d
+mkdir clipzy && cd clipzy
+curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/SokmeanKao/Clipzy/main/docker-compose.pull.yml
+docker compose pull
+docker compose up -d
 ```
 
 | Piece | Role |
 |-------|------|
-| `nginx:1.27-alpine` | TLS gateway — **only host port 443** |
+| `ghcr.io/sokmeankao/clipzy-gateway` | nginx TLS — **only host port 443** |
 | `ghcr.io/sokmeankao/clipzy-backend` | API + FFmpeg worker (internal) |
 | `ghcr.io/sokmeankao/clipzy-frontend` | Next.js UI (internal) |
 | `postgres:16` | Database (internal) |
@@ -26,11 +26,11 @@ CI pushes Clipzy images on every push to `main` and on tags (`v*`). Frontend bak
 ### Make GHCR packages public (one-time)
 
 1. https://github.com/SokmeanKao/Clipzy/pkgs/container/clipzy-backend → Package settings → **Public**
-2. Repeat for `clipzy-frontend`
+2. Repeat for `clipzy-frontend` and `clipzy-gateway`
 
 Until then: `docker login ghcr.io`.
 
-Pin a release: `CLIPZY_TAG=v1.0.0 docker compose -f docker-compose.pull.yml up -d`
+Pin a release: `CLIPZY_TAG=v1.0.0 docker compose up -d`
 
 ## Alternative: git clone → build from source
 

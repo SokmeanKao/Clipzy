@@ -31,6 +31,10 @@ jobs:
             dockerfile: ./frontend/Dockerfile
             # Baked for nginx gateway (browser → https://localhost/api)
             build_args: "NEXT_PUBLIC_API_URL=https://localhost/api"
+          - image: clipzy-gateway
+            context: ./infra/nginx
+            dockerfile: ./infra/nginx/Dockerfile
+            build_args: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v4

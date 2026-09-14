@@ -1,15 +1,19 @@
-# Clipzy — pull pre-built app images; nginx is the only host port (443)
+# Clipzy — curl this file only; pull images; no git clone
 #
-#   git clone --depth 1 https://github.com/SokmeanKao/Clipzy.git
-#   cd Clipzy
-#   docker compose -f docker-compose.pull.yml pull
-#   docker compose -f docker-compose.pull.yml up -d
+#   mkdir clipzy && cd clipzy
+#   curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/SokmeanKao/Clipzy/main/docker-compose.pull.yml
+#   docker compose pull
+#   docker compose up -d
 #
 # App:  https://localhost/en   (accept self-signed cert warning)
 # API:  https://localhost/api/actuator/health
 #
-# Images: ghcr.io/sokmeankao/clipzy-backend / clipzy-frontend
-# Tag:    CLIPZY_TAG=v1.0.0 docker compose -f docker-compose.pull.yml up -d
+# Images:
+#   ghcr.io/sokmeankao/clipzy-backend
+#   ghcr.io/sokmeankao/clipzy-frontend
+#   ghcr.io/sokmeankao/clipzy-gateway  (nginx TLS on 443)
+#
+# Tag:  CLIPZY_TAG=v1.0.0 docker compose up -d
 #
 # If pull is unauthorized: make GHCR packages Public, or:
 #   echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
@@ -94,19 +98,10 @@ services:
     depends_on:
       - backend
 
-  nginx-certs-init:
-    image: alpine:3.20
-    volumes:
-      - nginx_certs:/etc/nginx/certs
-      - ./infra/nginx/docker-entrypoint.d/10-generate-certs.sh:/generate.sh:ro
-    entrypoint: ["/bin/sh", "-c", "apk add --no-cache openssl && sh /generate.sh"]
-
   nginx:
-    image: nginx:1.27-alpine
+    image: ghcr.io/sokmeankao/clipzy-gateway:${CLIPZY_TAG:-latest}
     restart: unless-stopped
     depends_on:
-      nginx-certs-init:
-        condition: service_completed_successfully
       frontend:
         condition: service_started
       backend:
@@ -116,8 +111,7 @@ services:
     ports:
       - "443:443"
     volumes:
-      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - nginx_certs:/etc/nginx/certs:ro
+      - nginx_certs:/etc/nginx/certs
 
 volumes:
   clipzy_postgres_data:
