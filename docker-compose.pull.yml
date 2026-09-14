@@ -1,0 +1,113 @@
+# Clipzy — pull pre-built images and run (no source build)
+#
+# On any machine with Docker:
+#
+#   mkdir clipzy && cd clipzy
+#   curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/SokmeanKao/Clipzy/main/docker-compose.pull.yml
+#   docker compose pull
+#   docker compose up -d
+#
+# Or from a git clone:
+#   docker compose -f docker-compose.pull.yml pull
+#   docker compose -f docker-compose.pull.yml up -d
+#
+# App:     http://localhost:3000/en
+# API:     http://localhost:8081/actuator/health
+# MinIO:   http://localhost:9001  (minioadmin / minioadmin)
+#
+# Images:  ghcr.io/sokmeankao/clipzy-backend / clipzy-frontend
+# Tag:     CLIPZY_TAG=v1.0.0 docker compose up -d
+#
+# If pull is unauthorized: make GHCR packages Public, or:
+#   echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+
+name: clipzy
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: clipzy
+      POSTGRES_PASSWORD: clipzy
+      POSTGRES_DB: clipzy
+    ports:
+      - "5433:5432"
+    volumes:
+      - clipzy_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clipzy -d clipzy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: quay.io/minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - clipzy_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing local/videos;
+      mc anonymous set download local/videos;
+      exit 0;
+      "
+
+  backend:
+    image: ghcr.io/sokmeankao/clipzy-backend:${CLIPZY_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    ports:
+      - "8081:8081"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/clipzy
+      DB_USER: clipzy
+      DB_PASSWORD: clipzy
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: videos
+      S3_REGION: us-east-1
+      S3_PUBLIC_BASE_URL: http://localhost:9000/videos
+      JWT_SECRET: ${JWT_SECRET:-clipzy-local-compose-jwt-secret-change-me-32bytes-min!!}
+      CLIPZY_CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      FFMPEG_PATH: ffmpeg
+      SERVER_PORT: "8081"
+
+  frontend:
+    image: ghcr.io/sokmeankao/clipzy-frontend:${CLIPZY_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8081
+
+volumes:
+  clipzy_postgres_data:
+  clipzy_minio_data:

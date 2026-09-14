@@ -1,6 +1,33 @@
 # Clipzy deployment
 
-## Run on any PC (git clone → build from source)
+## Run on any PC (pull Compose + GHCR images)
+
+```bash
+mkdir clipzy && cd clipzy
+curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/SokmeanKao/Clipzy/main/docker-compose.pull.yml
+docker compose pull
+docker compose up -d
+```
+
+| Image | Role |
+|-------|------|
+| `ghcr.io/sokmeankao/clipzy-backend` | API + FFmpeg worker |
+| `ghcr.io/sokmeankao/clipzy-frontend` | Next.js UI |
+| `postgres:16` | Database (official) |
+| `quay.io/minio/minio` | Object storage (official) |
+
+CI pushes Clipzy images on every push to `main` and on tags (`v*`). See `.github/workflows/docker-images.yml`.
+
+### Make GHCR packages public (one-time)
+
+1. https://github.com/SokmeanKao/Clipzy/pkgs/container/clipzy-backend → Package settings → **Public**
+2. Repeat for `clipzy-frontend`
+
+Until then: `docker login ghcr.io`.
+
+Pin a release: `CLIPZY_TAG=v1.0.0 docker compose up -d`
+
+## Alternative: git clone → build from source
 
 ```bash
 git clone https://github.com/SokmeanKao/Clipzy.git
@@ -8,20 +35,7 @@ cd Clipzy
 docker compose up --build -d
 ```
 
-Root `docker-compose.yml` builds `backend/` and `frontend/` into local images (`clipzy-backend:local`, `clipzy-frontend:local`) and runs Postgres + MinIO.
-
-| Image | Role |
-|-------|------|
-| `clipzy-backend:local` (built) | API + FFmpeg worker |
-| `clipzy-frontend:local` (built) | Next.js UI |
-| `postgres:16` | Database (official) |
-| `quay.io/minio/minio` | Object storage (official) |
-
-Equivalent alternate file: `docker compose -f infra/docker-compose.prod.yml up --build -d`
-
-## Optional: published GHCR images
-
-CI still pushes `ghcr.io/sokmeankao/clipzy-backend` and `clipzy-frontend` on `main` / tags (`v*`). To run those without building, see `.github/workflows/docker-images.yml` and set package visibility to **Public**, or `docker login ghcr.io`.
+Root `docker-compose.yml` builds local images. Same stack: `infra/docker-compose.prod.yml`.
 
 | Service | Host URL |
 |---------|----------|
