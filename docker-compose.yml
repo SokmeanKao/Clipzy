@@ -1,10 +1,23 @@
-# Full-stack local "prod" stack: Postgres + MinIO + backend + frontend
-# Usage (from repo root):
-#   docker compose -f infra/docker-compose.prod.yml up --build
+# Clipzy — run the full stack with published UI + backend images
 #
-# Dev-only infra remains in infra/docker-compose.yml (Postgres + MinIO).
-# Host Postgres is published on 5433 (same as local/dev) to avoid clashing with
-# other Postgres instances on 5432. Inside the compose network, use postgres:5432.
+# Prerequisites: Docker Desktop (or Docker Engine + Compose v2)
+#
+#   docker compose up -d
+#
+# App:     http://localhost:3000
+# API:     http://localhost:8081/actuator/health
+# MinIO:   http://localhost:9001  (minioadmin / minioadmin)
+#
+# Images (built by GitHub Actions → GHCR):
+#   ghcr.io/sokmeankao/clipzy-backend:latest
+#   ghcr.io/sokmeankao/clipzy-frontend:latest
+#
+# If packages are private:  echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+#
+# Override tag:  CLIPZY_TAG=v1.0.0 docker compose up -d
+# Build from source instead:  docker compose -f infra/docker-compose.prod.yml up --build
+
+name: clipzy
 
 services:
   postgres:
@@ -17,7 +30,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres_prod_data:/var/lib/postgresql/data
+      - clipzy_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U clipzy -d clipzy"]
       interval: 5s
@@ -35,7 +48,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - minio_prod_data:/data
+      - clipzy_minio_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
@@ -58,9 +71,6 @@ services:
 
   backend:
     image: ghcr.io/sokmeankao/clipzy-backend:${CLIPZY_TAG:-latest}
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       postgres:
@@ -79,26 +89,19 @@ services:
       S3_BUCKET: videos
       S3_REGION: us-east-1
       S3_PUBLIC_BASE_URL: http://localhost:9000/videos
-      JWT_SECRET: clipzy-prod-compose-jwt-secret-change-me-in-real-deploy-32b-min!!
+      JWT_SECRET: ${JWT_SECRET:-clipzy-local-compose-jwt-secret-change-me-32bytes-min!!}
       CLIPZY_CORS_ORIGINS: http://localhost:3000,http://localhost:3001
       FFMPEG_PATH: ffmpeg
       SERVER_PORT: "8081"
 
   frontend:
     image: ghcr.io/sokmeankao/clipzy-frontend:${CLIPZY_TAG:-latest}
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: http://localhost:8081
     restart: unless-stopped
     depends_on:
       - backend
     ports:
       - "3000:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8081
 
 volumes:
-  postgres_prod_data:
-  minio_prod_data:
+  clipzy_postgres_data:
+  clipzy_minio_data:
