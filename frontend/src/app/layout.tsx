@@ -6,6 +6,7 @@ import {
   Noto_Sans_KR,
 } from "next/font/google";
 import { routing } from "@/i18n/routing";
+import { ThemeScript } from "@/components/theme-script";
 import "./globals.css";
 
 const mavenPro = Maven_Pro({
@@ -50,7 +51,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${mavenPro.variable} ${geistMono.variable} ${notoKhmer.variable} ${notoKr.variable} h-full`}
     >
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+      <body className="flex min-h-full flex-col font-sans">
+        <ThemeScript />
+        {children}
+      </body>
     </html>
   );
 }
